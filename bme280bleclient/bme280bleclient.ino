@@ -112,14 +112,13 @@ static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
   //store humidity value
   humidityChar = (char*)pData;
   newHumidity = true;
-  Serial.print(newHumidity);
 }
+
 static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
                                     uint8_t* pData, size_t length, bool isNotify) {
-  //store humidity value
+  //store pressure value
   pressureChar = (char*)pData;
   newPressure = true;
-  Serial.print(newPressure);
 }
 
 //function that prints the latest sensor readings in the OLED display
@@ -164,18 +163,22 @@ void loop() {
     if (connectToServer(*pServerAddress)) {
       Serial.println("We are now connected to the BLE Server.");
       //Activate the Notify property of each Characteristic
-      temperatureCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      temperatureCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2901))->writeValue((uint8_t*)notificationOn, 2, true);
       humidityCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      pressureCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2903))->writeValue((uint8_t*)notificationOn, 2, true);
       connected = true;
     } else {
-      Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
+      Serial.println("We have failed to connect to the server; Trying again...");
+      delay(1000);
+      connectToServer(*pServerAddress);
     }
     doConnect = false;
   }
   //if new temperature readings are available, print in the OLED
-  if (newTemperature && newHumidity){
+  if (newTemperature && newHumidity && newPressure){
     newTemperature = false;
     newHumidity = false;
+    newPressure = false;
     printReadings();
   }
   delay(1000); // Delay a second between loops.

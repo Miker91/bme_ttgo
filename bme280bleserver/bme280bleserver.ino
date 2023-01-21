@@ -21,7 +21,7 @@ float hum;
 
 // Timer variables
 unsigned long lastTime = 0;
-unsigned long timerDelay = 1000;
+unsigned long timerDelay = 5000;
 
 bool deviceConnected = false;
 const char *idUla = "Ul_1";
@@ -31,12 +31,8 @@ const char *idUla = "Ul_1";
 #define SERVICE_UUID "91bad492-b950-4226-aa2b-4ede9fa42f59"
 
 // Temperature Characteristic and Descriptor
-BLECharacteristic idUlaCharacteristic("cba1d466-344c-4be3-ab3f-189f80dd7518", BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor idUlaDescriptor(BLEUUID((uint16_t)0x2902));
-
-// Temperature Characteristic and Descriptor
 BLECharacteristic bmeTemperatureCelsiusCharacteristics("cba1d466-344c-4be3-ab3f-189f80dd7518", BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor bmeTemperatureCelsiusDescriptor(BLEUUID((uint16_t)0x2902));
+BLEDescriptor bmeTemperatureCelsiusDescriptor(BLEUUID((uint16_t)0x2901));
 
 // Humidity Characteristic and Descriptor
 BLECharacteristic bmeHumidityCharacteristics("ca73b3ba-39f6-4ab3-91ae-186dc9577d99", BLECharacteristic::PROPERTY_NOTIFY);
@@ -44,7 +40,7 @@ BLEDescriptor bmeHumidityDescriptor(BLEUUID((uint16_t)0x2902));
 
 // Pressure Characteristic and Descriptor
 BLECharacteristic bmePressureCharacteristics("80d92805-e1b3-49c3-aa46-acd5aef61606", BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor bmePressureDescriptor(BLEUUID((uint16_t)0x2902));
+BLEDescriptor bmePressureDescriptor(BLEUUID((uint16_t)0x2903));
 
 //Setup callbacks onConnect and onDisconnect
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -96,7 +92,7 @@ void setup() {
   // Humidity
   bmeService->addCharacteristic(&bmeHumidityCharacteristics);
   bmeHumidityDescriptor.setValue("BME humidity");
-  bmeHumidityCharacteristics.addDescriptor(new BLE2902());
+  bmeHumidityCharacteristics.addDescriptor(&bmeHumidityDescriptor);
 
   // Pressure
   bmeService->addCharacteristic(&bmePressureCharacteristics);
@@ -146,11 +142,11 @@ void loop() {
 
       //Notify pressure reading from BME
       static char pressure[6];
-      dtostrf(press, 6, 2, pressure);
+      dtostrf((press / 100.0F), 6, 2, pressure);
       //Set humidity Characteristic value and notify connected client
       bmePressureCharacteristics.setValue(pressure);
       bmePressureCharacteristics.notify();   
-      Serial.print("Pressure = ");
+      Serial.print(" - Pressure: ");
       Serial.print(press / 100.0F);
       Serial.println(" hPa");
 
