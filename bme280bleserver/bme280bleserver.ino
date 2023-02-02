@@ -24,7 +24,6 @@ unsigned long lastTime = 0;
 unsigned long timerDelay = 5000;
 
 bool deviceConnected = false;
-const char *idUla = "Ul_1";
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -112,12 +111,9 @@ void setup() {
 void loop() {
   if (deviceConnected) {
     if ((millis() - lastTime) > timerDelay) {
-      // Read temperature as Celsius (the default)
-      temp = bme.readTemperature();
-      // Fahrenheit
+      temp  = bme.readTemperature();
       press = bme.readPressure();
-      // Read humidity
-      hum = bme.readHumidity();
+      hum   = bme.readHumidity();
   
       //Notify temperature reading from BME sensor
       // #ifdef temperatureCelsius
@@ -125,6 +121,7 @@ void loop() {
       dtostrf(temp, 6, 2, temperatureCTemp);
       //Set temperature Characteristic value and notify connected client
       bmeTemperatureCelsiusCharacteristics.setValue(temperatureCTemp);
+      // bmeTemperatureCelsiusCharacteristics.setValue(temperatureCTemp);
       bmeTemperatureCelsiusCharacteristics.notify();
       Serial.print("Temperature Celsius: ");
       Serial.print(temp);

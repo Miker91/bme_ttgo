@@ -1,0 +1,17 @@
+{
+    "name": "ThingsBoard",
+    "keywords": "mqtt, m2m, iot, thingsboard",
+    "description": "A library for connecting to the ThingsBoard IoT platform. Thin wrapper on PubSubClient",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/thingsboard/ThingsBoard-Arduino-MQTT-SDK"
+    },
+    "dependencies": {
+        "bblanchon/ArduinoJson": "^6.19.4",
+        "knolleary/PubSubClient": "^2.8",
+        "arduino-libraries/ArduinoHttpClient" : "^0.4.0"
+    },
+    "version": "0.9.0",
+    "examples": "examples/*/*.ino",
+    "frameworks": "arduino"
+}

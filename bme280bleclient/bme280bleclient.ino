@@ -30,17 +30,16 @@ static boolean doConnect = false;
 static boolean connected = false;
 
 //Address of the peripheral device. Address will be found during scanning...
-static BLEAddress *pServerAddress;
- 
+static BLEAddress* pServerAddress;
+
 //Characteristicd that we want to read
 static BLERemoteCharacteristic* temperatureCharacteristic;
 static BLERemoteCharacteristic* humidityCharacteristic;
 static BLERemoteCharacteristic* pressureCharacteristic;
 
 //Activate notify
-const uint8_t notificationOn[] = {0x1, 0x0};
-const uint8_t notificationOff[] = {0x0, 0x0};
-
+const uint8_t notificationOn[] = { 0x1, 0x0 };
+const uint8_t notificationOff[] = { 0x0, 0x0 };
 
 //Variables to store temperature and humidity
 char* temperatureChar;
@@ -54,12 +53,12 @@ boolean newPressure = false;
 
 //Connect to the BLE Server that has the name, Service, and Characteristics
 bool connectToServer(BLEAddress pAddress) {
-   BLEClient* pClient = BLEDevice::createClient();
- 
+  BLEClient* pClient = BLEDevice::createClient();
+
   // Connect to the remove BLE Server.
   pClient->connect(pAddress);
   Serial.println(" - Connected to server");
- 
+
   // Obtain a reference to the service we are after in the remote BLE server.
   BLERemoteService* pRemoteService = pClient->getService(bmeServiceUUID);
   if (pRemoteService == nullptr) {
@@ -67,7 +66,7 @@ bool connectToServer(BLEAddress pAddress) {
     Serial.println(bmeServiceUUID.toString().c_str());
     return (false);
   }
- 
+
   // Obtain a reference to the characteristics in the service of the remote BLE server.
   temperatureCharacteristic = pRemoteService->getCharacteristic(temperatureCharacteristicUUID);
   humidityCharacteristic = pRemoteService->getCharacteristic(humidityCharacteristicUUID);
@@ -78,7 +77,7 @@ bool connectToServer(BLEAddress pAddress) {
     return false;
   }
   Serial.println(" - Found our characteristics");
- 
+
   //Assign callback functions for the Characteristics
   temperatureCharacteristic->registerForNotify(temperatureNotifyCallback);
   humidityCharacteristic->registerForNotify(humidityNotifyCallback);
@@ -87,65 +86,70 @@ bool connectToServer(BLEAddress pAddress) {
 }
 
 //Callback function that gets called, when another device's advertisement has been received
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    if (advertisedDevice.getName() == bleServerName) { //Check if the name of the advertiser matches
-      advertisedDevice.getScan()->stop(); //Scan can be stopped, we found what we are looking for
-      pServerAddress = new BLEAddress(advertisedDevice.getAddress()); //Address of advertiser is the one we need
-      doConnect = true; //Set indicator, stating that we are ready to connect
+    if (advertisedDevice.getName() == bleServerName) {                 //Check if the name of the advertiser matches
+      advertisedDevice.getScan()->stop();                              //Scan can be stopped, we found what we are looking for
+      pServerAddress = new BLEAddress(advertisedDevice.getAddress());  //Address of advertiser is the one we need
+      doConnect = true;                                                //Set indicator, stating that we are ready to connect
       Serial.println("Device found. Connecting!");
     }
   }
 };
- 
+
 //When the BLE Server sends a new temperature reading with the notify property
-static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                        uint8_t* pData, size_t length, bool isNotify) {
+static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
+                                      uint8_t* pData, size_t length, bool isNotify) {
   //store temperature value
   temperatureChar = (char*)pData;
+  Serial.println(temperatureChar);
+  Serial.println("----------");
   newTemperature = true;
 }
 
 //When the BLE Server sends a new humidity reading with the notify property
-static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                    uint8_t* pData, size_t length, bool isNotify) {
+static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
+                                   uint8_t* pData, size_t length, bool isNotify) {
   //store humidity value
   humidityChar = (char*)pData;
+  Serial.println(humidityChar);
+  Serial.println("----------");
   newHumidity = true;
 }
 
-static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                    uint8_t* pData, size_t length, bool isNotify) {
+static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
+                                   uint8_t* pData, size_t length, bool isNotify) {
   //store pressure value
   pressureChar = (char*)pData;
+  Serial.println(pressureChar);
+  Serial.println("----------");
   newPressure = true;
 }
 
-//function that prints the latest sensor readings in the OLED display
-void printReadings(){
-  
+//function that prints the latest sensor readings 
+void printReadings() {
+
   Serial.print("Temperature:");
   Serial.print(temperatureChar);
   Serial.print("*C");
 
   Serial.print(" Humidity:");
-  Serial.print(humidityChar); 
+  Serial.print(humidityChar);
   Serial.println("%");
 
   Serial.print(" Pressure:");
-  Serial.print(pressureChar); 
+  Serial.print(pressureChar);
   Serial.println("hPa");
 }
 
 void setup() {
-
   //Start serial communication
   Serial.begin(9600);
   Serial.println("Starting Arduino BLE Client application...");
 
   //Init BLE device
   BLEDevice::init("");
- 
+
   // Retrieve a Scanner and set the callback we want to use to be informed when we
   // have detected a new device.  Specify that we want active scanning and start the
   // scan to run for 30 seconds.
@@ -175,11 +179,11 @@ void loop() {
     doConnect = false;
   }
   //if new temperature readings are available, print in the OLED
-  if (newTemperature && newHumidity && newPressure){
+  if (newTemperature && newHumidity && newPressure) {
     newTemperature = false;
     newHumidity = false;
     newPressure = false;
     printReadings();
   }
-  delay(1000); // Delay a second between loops.
+  delay(5000);  // Delay a second between loops.
 }
