@@ -7,15 +7,41 @@
 
 #include "BLEDevice.h"
 #include <Wire.h>
-
-//Default Temperature is in Celsius
-//Comment the next line for Temperature in Fahrenheit
-#define temperatureCelsius
+#include <TinyGsmClient.h>
+#include <SoftwareSerial.h>
+#include <ThingsBoardHttp.h>
 
 //BLE Server name (the other ESP32 name running the server sketch)
 #define bleServerName "BME280_ESP32"
 
+#define TINY_GSM_MODEM_SIM800
+#define temperatureCelsius
+
+// GPRS credentials
+constexpr char APN[] PROGMEM = "internet";
+constexpr char USER[] PROGMEM = "";
+constexpr char PASS[] PROGMEM = "";
+
+// See https://thingsboard.io/docs/getting-started-guides/helloworld/
+// to understand how to obtain an access token
+constexpr char TOKEN[] PROGMEM = "4jiZPgCPEGNZfWvKaupn";
+
+// Thingsboard we want to establish a connection too
+constexpr char THINGSBOARD_SERVER[] PROGMEM = "demo.thingsboard.io";
+// HTTP port used to communicate with the server, 80 is the default unencrypted HTTP port,
+// whereas 443 would be the default encrypted SSL HTTPS port
+constexpr uint16_t THINGSBOARD_PORT PROGMEM = 80U;
+
+// Maximum size packets will ever be sent or received by the underlying MQTT client,
+// if the size is to small messages might not be sent or received messages will be discarded
+constexpr uint32_t MAX_MESSAGE_SIZE PROGMEM = 128U;
+
+// Baud rate for the debugging serial connection
+// If the Serial output is mangled, ensure to change the monitor speed accordingly to this variable
+constexpr uint32_t SERIAL_DEBUG_BAUD PROGMEM = 115200U;
 /* UUID's of the service, characteristic that we want to read*/
+
+
 // BLE Service
 static BLEUUID bmeServiceUUID("91bad492-b950-4226-aa2b-4ede9fa42f59");
 // temperature Characteriric
