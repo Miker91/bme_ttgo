@@ -21,7 +21,7 @@ float hum;
 
 // Timer variables
 unsigned long lastTime = 0;
-unsigned long timerDelay = 5000;
+unsigned long timerDelay = 15000;
 
 bool deviceConnected = false;
 

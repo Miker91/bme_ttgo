@@ -295,7 +295,7 @@ void loop() {
     }
   }
 
-  delay(5000);  // Delay a second between loops.
+  delay(60000);  // Delay a second between loops.
   // SerialMon.println("Going to sleep...");
   // esp_deep_sleep_start();
 }
