@@ -112,6 +112,9 @@ boolean newTemperature = false;
 boolean newHumidity = false;
 boolean newPressure = false;
 
+// declare json for data
+DynamicJsonDocument doc(1024);
+
 //Connect to the BLE Server that has the name, Service, and Characteristics
 bool connectToServer(BLEAddress pAddress) {
   BLEClient* pClient = BLEDevice::createClient();
@@ -158,16 +161,12 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   }
 };
 
-DynamicJsonDocument doc(1024);
-
 //When the BLE Server sends a new temperature reading with the notify property
 static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                                       uint8_t* pData, size_t length, bool isNotify) {
   //store temperature value
   temperatureChar = (char*)pData;
-  Serial.println(temperatureChar);
-  doc["Temperatura"] = temperatureChar;
-  Serial.println("----------");
+  doc["Temperatura"] = String(temperatureChar);
   newTemperature = true;
 }
 
@@ -176,9 +175,7 @@ static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
                                    uint8_t* pData, size_t length, bool isNotify) {
   //store humidity value
   humidityChar = (char*)pData;
-  Serial.println(humidityChar);
-  Serial.println("----------");
-  doc["Wilgotnosc"] = humidityChar;
+  doc["Wilgotnosc"] = String(humidityChar);
   newHumidity = true;
 }
 
@@ -186,9 +183,7 @@ static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
                                    uint8_t* pData, size_t length, bool isNotify) {
   //store pressure value
   pressureChar = (char*)pData;
-  Serial.println(pressureChar);
-  Serial.println("----------");
-  doc["Cisnienie"] = pressureChar;
+  doc["Cisnienie"] = String(pressureChar);
   newPressure = true;
 }
 
@@ -265,13 +260,12 @@ void loop() {
       SerialMon.println(" fail");
     }
     else {
-      
+      String json_string;
+      serializeJson(doc, json_string);
       SerialMon.println(" OK");
       // Making an HTTP POST request
       SerialMon.println("Performing HTTP POST request...");
-      // https://demo.thingsboard.io/api/v1/tPmAT5Ab3j7F9value1/telemetry
-      String jsonD = "{\"Temperatura\":\"22\",\"Cisnienie\":\"1024\",\"Wilogtnosc\":\"31%\"}";
-      unsigned int l=jsonD.length();
+      unsigned int l=json_string.length();
       client.print(String("POST ") + "/api/v1/tPmAT5Ab3j7F9value1/telemetry" + " HTTP/1.1\r\n");
       client.print(String("Host: ") + "demo.thingsboard.io" + "\r\n");
       client.println("Connection: close");
@@ -279,7 +273,8 @@ void loop() {
       client.print("Content-Length: ");
       client.println(l);
       client.println();
-      client.println(String(jsonD));
+      SerialMon.println(json_string);
+      client.println(json_string);
 
       unsigned long timeout = millis();
       while (client.connected() && millis() - timeout < 10000L) {
