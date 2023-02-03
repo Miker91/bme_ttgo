@@ -1,8 +1,10 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 //
 // This example shows how to generate a JSON document with ArduinoJson.
+//
+// https://arduinojson.org/v6/example/generator/
 
 #include <ArduinoJson.h>
 
@@ -15,7 +17,7 @@ void setup() {
   //
   // Inside the brackets, 200 is the RAM allocated to this document.
   // Don't forget to change this value to match your requirement.
-  // Use arduinojson.org/v6/assistant to compute the capacity.
+  // Use https://arduinojson.org/v6/assistant to compute the capacity.
   StaticJsonDocument<200> doc;
 
   // StaticJsonObject allocates memory on the stack, it can be
@@ -61,4 +63,15 @@ void loop() {
   // not used in this example
 }
 
-// Visit https://arduinojson.org/v6/example/generator/ for more.
+// See also
+// --------
+//
+// https://arduinojson.org/ contains the documentation for all the functions
+// used above. It also includes an FAQ that will help you solve any
+// serialization problem.
+//
+// The book "Mastering ArduinoJson" contains a tutorial on serialization.
+// It begins with a simple example, like the one above, and then adds more
+// features like serializing directly to a file or an HTTP request.
+// Learn more at https://arduinojson.org/book/
+// Use the coupon code TWENTY for a 20% discount ❤❤❤❤❤

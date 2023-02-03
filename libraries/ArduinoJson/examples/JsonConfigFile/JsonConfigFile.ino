@@ -1,5 +1,5 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 //
 // This example shows how to store your project configuration in a file.
@@ -10,6 +10,14 @@
 //   "hostname": "examples.com",
 //   "port": 2731
 // }
+//
+// To run this program, you need an SD card connected to the SPI bus as follows:
+// * MOSI <-> pin 11
+// * MISO <-> pin 12
+// * CLK  <-> pin 13
+// * CS   <-> pin 4
+//
+// https://arduinojson.org/v6/example/config/
 
 #include <ArduinoJson.h>
 #include <SD.h>
@@ -19,7 +27,8 @@
 //
 // Never use a JsonDocument to store the configuration!
 // A JsonDocument is *not* a permanent storage; it's only a temporary storage
-// used during the serialization phase.
+// used during the serialization phase. See:
+// https://arduinojson.org/v6/faq/why-must-i-create-a-separate-config-object/
 struct Config {
   char hostname[64];
   int port;
@@ -35,7 +44,7 @@ void loadConfiguration(const char *filename, Config &config) {
 
   // Allocate a temporary JsonDocument
   // Don't forget to change the capacity to match your requirements.
-  // Use arduinojson.org/v6/assistant to compute the capacity.
+  // Use https://arduinojson.org/v6/assistant to compute the capacity.
   StaticJsonDocument<512> doc;
 
   // Deserialize the JSON document
@@ -67,7 +76,7 @@ void saveConfiguration(const char *filename, const Config &config) {
 
   // Allocate a temporary JsonDocument
   // Don't forget to change the capacity to match your requirements.
-  // Use arduinojson.org/assistant to compute the capacity.
+  // Use https://arduinojson.org/assistant to compute the capacity.
   StaticJsonDocument<256> doc;
 
   // Set the values in the document
@@ -108,7 +117,8 @@ void setup() {
   while (!Serial) continue;
 
   // Initialize SD library
-  while (!SD.begin()) {
+  const int chipSelect = 4;
+  while (!SD.begin(chipSelect)) {
     Serial.println(F("Failed to initialize SD library"));
     delay(1000);
   }
@@ -130,4 +140,21 @@ void loop() {
   // not used in this example
 }
 
-// Visit https://arduinojson.org/v6/example/config/ for more.
+// Performance issue?
+// ------------------
+//
+// File is an unbuffered stream, which is not optimal for ArduinoJson.
+// See: https://arduinojson.org/v6/how-to/improve-speed/
+
+// See also
+// --------
+//
+// https://arduinojson.org/ contains the documentation for all the functions
+// used above. It also includes an FAQ that will help you solve any
+// serialization or deserialization problem.
+//
+// The book "Mastering ArduinoJson" contains a case study of a project that has
+// a complex configuration with nested members.
+// Contrary to this example, the project in the book uses the SPIFFS filesystem.
+// Learn more at https://arduinojson.org/book/
+// Use the coupon code TWENTY for a 20% discount ❤❤❤❤❤

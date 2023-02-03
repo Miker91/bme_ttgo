@@ -1,8 +1,10 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 
 #pragma once
+
+#include <ArduinoJson/Namespace.hpp>
 
 namespace ARDUINOJSON_NAMESPACE {
 
@@ -11,14 +13,11 @@ namespace ARDUINOJSON_NAMESPACE {
 template <typename TBase, typename TDerived>
 class is_base_of {
  protected:  // <- to avoid GCC's "all member functions in class are private"
-  typedef char Yes[1];
-  typedef char No[2];
-
-  static Yes &probe(const TBase *);
-  static No &probe(...);
+  static int probe(const TBase*);
+  static char probe(...);
 
  public:
   static const bool value =
-      sizeof(probe(reinterpret_cast<TDerived *>(0))) == sizeof(Yes);
+      sizeof(probe(reinterpret_cast<TDerived*>(0))) == sizeof(int);
 };
 }  // namespace ARDUINOJSON_NAMESPACE

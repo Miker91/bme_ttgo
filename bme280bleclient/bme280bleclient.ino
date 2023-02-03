@@ -6,21 +6,53 @@
 *********/
 
 #include "BLEDevice.h"
-#include <Wire.h>
+// #include <Wire.h>
+// #include <SoftwareSerial.h>
 #include <TinyGsmClient.h>
-#include <SoftwareSerial.h>
 #include <ThingsBoardHttp.h>
 
 //BLE Server name (the other ESP32 name running the server sketch)
 #define bleServerName "BME280_ESP32"
 
-#define TINY_GSM_MODEM_SIM800
 #define temperatureCelsius
+// TTGO T-Call pins
+#define MODEM_RST            5
+#define MODEM_PWKEY          4
+#define MODEM_POWER_ON       23
+#define MODEM_TX             27
+#define MODEM_RX             26
+#define I2C_SDA              21
+#define I2C_SCL              22
+
+// Set serial for AT commands (to SIM800 module)
+#define SerialAT Serial1
+#define SerialMon Serial
+
+// Configure TinyGSM library
+#define TINY_GSM_MODEM_SIM800      // Modem is SIM800
+#define TINY_GSM_RX_BUFFER   1024  // Set RX buffer to 1Kb
+
+#define uS_TO_S_FACTOR 1000000UL   /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP  3600       /* Time ESP32 will go to sleep (in seconds) 3600 seconds = 1 hour */
+
+#define IP5306_ADDR          0x75
+#define IP5306_REG_SYS_CTL0  0x00
+
+#ifdef DUMP_AT_COMMANDS
+  #include <StreamDebugger.h>
+  StreamDebugger debugger(SerialAT, SerialMon);
+  TinyGsm modem(debugger);
+#else
+  TinyGsm modem(SerialAT);
+#endif
+
+// TinyGsmClient client(modem);
 
 // GPRS credentials
 constexpr char APN[] PROGMEM = "internet";
 constexpr char USER[] PROGMEM = "";
 constexpr char PASS[] PROGMEM = "";
+const char simPIN[]   = ""; 
 
 // See https://thingsboard.io/docs/getting-started-guides/helloworld/
 // to understand how to obtain an access token
@@ -64,7 +96,7 @@ static BLERemoteCharacteristic* humidityCharacteristic;
 static BLERemoteCharacteristic* pressureCharacteristic;
 
 //Activate notify
-const uint8_t notificationOn[] = { 0x1, 0x0 };
+const uint8_t notificationOn[]  = { 0x1, 0x0 };
 const uint8_t notificationOff[] = { 0x0, 0x0 };
 
 //Variables to store temperature and humidity
@@ -152,26 +184,25 @@ static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
   newPressure = true;
 }
 
-//function that prints the latest sensor readings 
-void printReadings() {
-
-  Serial.print("Temperature:");
-  Serial.print(temperatureChar);
-  Serial.print("*C");
-
-  Serial.print(" Humidity:");
-  Serial.print(humidityChar);
-  Serial.println("%");
-
-  Serial.print(" Pressure:");
-  Serial.print(pressureChar);
-  Serial.println("hPa");
-}
 
 void setup() {
   //Start serial communication
   Serial.begin(9600);
   Serial.println("Starting Arduino BLE Client application...");
+
+  // Set modem reset, enable, power pins
+  pinMode(MODEM_PWKEY, OUTPUT);
+  pinMode(MODEM_RST, OUTPUT);
+  pinMode(MODEM_POWER_ON, OUTPUT);
+  digitalWrite(MODEM_PWKEY, LOW);
+  digitalWrite(MODEM_RST, HIGH);
+  digitalWrite(MODEM_POWER_ON, HIGH);
+
+  // Set GSM module baud rate and UART pins
+  SerialAT.begin(9600, SERIAL_8N1, MODEM_RX, MODEM_TX);
+
+  SerialMon.println("Initializing modem...");
+  modem.restart();
 
   //Init BLE device
   BLEDevice::init("");
@@ -183,6 +214,15 @@ void setup() {
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   pBLEScan->setActiveScan(true);
   pBLEScan->start(30);
+
+    // Unlock your SIM card with a PIN if needed
+  if (strlen(simPIN) && modem.getSimStatus() != 3 ) {
+    modem.simUnlock(simPIN);
+  }
+  
+  // Configure the wake up source as timer wake up  
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
 }
 
 void loop() {
@@ -204,12 +244,6 @@ void loop() {
     }
     doConnect = false;
   }
-  //if new temperature readings are available, print in the OLED
-  if (newTemperature && newHumidity && newPressure) {
-    newTemperature = false;
-    newHumidity = false;
-    newPressure = false;
-    printReadings();
-  }
+
   delay(5000);  // Delay a second between loops.
 }

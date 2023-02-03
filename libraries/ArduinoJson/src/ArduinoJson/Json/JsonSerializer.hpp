@@ -1,42 +1,46 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 
 #pragma once
 
-#include "../Misc/Visitable.hpp"
-#include "../Serialization/measure.hpp"
-#include "../Serialization/serialize.hpp"
-#include "TextFormatter.hpp"
+#include <ArduinoJson/Json/TextFormatter.hpp>
+#include <ArduinoJson/Serialization/measure.hpp>
+#include <ArduinoJson/Serialization/serialize.hpp>
+#include <ArduinoJson/Variant/Visitor.hpp>
 
 namespace ARDUINOJSON_NAMESPACE {
 
 template <typename TWriter>
-class JsonSerializer {
+class JsonSerializer : public Visitor<size_t> {
  public:
-  JsonSerializer(TWriter &writer) : _formatter(writer) {}
+  static const bool producesText = true;
 
-  FORCE_INLINE void visitArray(const CollectionData &array) {
+  JsonSerializer(TWriter writer) : _formatter(writer) {}
+
+  FORCE_INLINE size_t visitArray(const CollectionData& array) {
     write('[');
 
-    VariantSlot *slot = array.head();
+    const VariantSlot* slot = array.head();
 
     while (slot != 0) {
       slot->data()->accept(*this);
 
       slot = slot->next();
-      if (slot == 0) break;
+      if (slot == 0)
+        break;
 
       write(',');
     }
 
     write(']');
+    return bytesWritten();
   }
 
-  void visitObject(const CollectionData &object) {
+  size_t visitObject(const CollectionData& object) {
     write('{');
 
-    VariantSlot *slot = object.head();
+    const VariantSlot* slot = object.head();
 
     while (slot != 0) {
       _formatter.writeString(slot->key());
@@ -44,52 +48,66 @@ class JsonSerializer {
       slot->data()->accept(*this);
 
       slot = slot->next();
-      if (slot == 0) break;
+      if (slot == 0)
+        break;
 
       write(',');
     }
 
     write('}');
+    return bytesWritten();
   }
 
-  void visitFloat(Float value) {
+  size_t visitFloat(JsonFloat value) {
     _formatter.writeFloat(value);
+    return bytesWritten();
   }
 
-  void visitString(const char *value) {
+  size_t visitString(const char* value) {
     _formatter.writeString(value);
+    return bytesWritten();
   }
 
-  void visitRawJson(const char *data, size_t n) {
+  size_t visitString(const char* value, size_t n) {
+    _formatter.writeString(value, n);
+    return bytesWritten();
+  }
+
+  size_t visitRawJson(const char* data, size_t n) {
     _formatter.writeRaw(data, n);
+    return bytesWritten();
   }
 
-  void visitNegativeInteger(UInt value) {
-    _formatter.writeNegativeInteger(value);
+  size_t visitSignedInteger(JsonInteger value) {
+    _formatter.writeInteger(value);
+    return bytesWritten();
   }
 
-  void visitPositiveInteger(UInt value) {
-    _formatter.writePositiveInteger(value);
+  size_t visitUnsignedInteger(JsonUInt value) {
+    _formatter.writeInteger(value);
+    return bytesWritten();
   }
 
-  void visitBoolean(bool value) {
+  size_t visitBoolean(bool value) {
     _formatter.writeBoolean(value);
+    return bytesWritten();
   }
 
-  void visitNull() {
+  size_t visitNull() {
     _formatter.writeRaw("null");
+    return bytesWritten();
   }
 
+ protected:
   size_t bytesWritten() const {
     return _formatter.bytesWritten();
   }
 
- protected:
   void write(char c) {
     _formatter.writeRaw(c);
   }
 
-  void write(const char *s) {
+  void write(const char* s) {
     _formatter.writeRaw(s);
   }
 
@@ -97,25 +115,31 @@ class JsonSerializer {
   TextFormatter<TWriter> _formatter;
 };
 
-template <typename TSource, typename TDestination>
-size_t serializeJson(const TSource &source, TDestination &destination) {
+// Produces a minified JSON document.
+// https://arduinojson.org/v6/api/json/serializejson/
+template <typename TDestination>
+size_t serializeJson(JsonVariantConst source, TDestination& destination) {
   return serialize<JsonSerializer>(source, destination);
 }
 
-template <typename TSource>
-size_t serializeJson(const TSource &source, char *buffer, size_t bufferSize) {
+// Produces a minified JSON document.
+// https://arduinojson.org/v6/api/json/serializejson/
+inline size_t serializeJson(JsonVariantConst source, void* buffer,
+                            size_t bufferSize) {
   return serialize<JsonSerializer>(source, buffer, bufferSize);
 }
 
-template <typename TSource>
-size_t measureJson(const TSource &source) {
+// Computes the length of the document that serializeJson() produces.
+// https://arduinojson.org/v6/api/json/measurejson/
+inline size_t measureJson(JsonVariantConst source) {
   return measure<JsonSerializer>(source);
 }
 
 #if ARDUINOJSON_ENABLE_STD_STREAM
 template <typename T>
-inline typename enable_if<IsVisitable<T>::value, std::ostream &>::type
-operator<<(std::ostream &os, const T &source) {
+inline typename enable_if<is_convertible<T, JsonVariantConst>::value,
+                          std::ostream&>::type
+operator<<(std::ostream& os, const T& source) {
   serializeJson(source, os);
   return os;
 }

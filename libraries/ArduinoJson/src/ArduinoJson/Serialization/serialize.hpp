@@ -1,53 +1,48 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 
 #pragma once
 
-#include "./DynamicStringWriter.hpp"
-#include "./StaticStringWriter.hpp"
-
-#if ARDUINOJSON_ENABLE_STD_STREAM
-#include "./StreamWriter.hpp"
-#endif
+#include <ArduinoJson/Serialization/Writer.hpp>
+#include <ArduinoJson/Variant/VariantFunctions.hpp>
 
 namespace ARDUINOJSON_NAMESPACE {
 
-template <template <typename> class TSerializer, typename TSource,
-          typename TPrint>
-typename enable_if<!IsWriteableString<TPrint>::value, size_t>::type serialize(
-    const TSource &source, TPrint &destination) {
-  TSerializer<TPrint> serializer(destination);
-  source.accept(serializer);
-  return serializer.bytesWritten();
+template <template <typename> class TSerializer, typename TWriter>
+size_t doSerialize(JsonVariantConst source, TWriter writer) {
+  TSerializer<TWriter> serializer(writer);
+  return variantAccept(VariantAttorney::getData(source), serializer);
 }
 
-#if ARDUINOJSON_ENABLE_STD_STREAM
-template <template <typename> class TSerializer, typename TSource>
-size_t serialize(const TSource &source, std::ostream &os) {
-  StreamWriter writer(os);
-  return serialize<TSerializer>(source, writer);
-}
-#endif
-
-template <template <typename> class TSerializer, typename TSource>
-size_t serialize(const TSource &source, char *buffer, size_t bufferSize) {
-  StaticStringWriter writer(buffer, bufferSize);
-  return serialize<TSerializer>(source, writer);
+template <template <typename> class TSerializer, typename TDestination>
+size_t serialize(JsonVariantConst source, TDestination& destination) {
+  Writer<TDestination> writer(destination);
+  return doSerialize<TSerializer>(source, writer);
 }
 
-template <template <typename> class TSerializer, typename TSource, size_t N>
-size_t serialize(const TSource &source, char (&buffer)[N]) {
-  StaticStringWriter writer(buffer, N);
-  return serialize<TSerializer>(source, writer);
+template <template <typename> class TSerializer>
+typename enable_if<!TSerializer<StaticStringWriter>::producesText, size_t>::type
+serialize(JsonVariantConst source, void* buffer, size_t bufferSize) {
+  StaticStringWriter writer(reinterpret_cast<char*>(buffer), bufferSize);
+  return doSerialize<TSerializer>(source, writer);
 }
 
-template <template <typename> class TSerializer, typename TSource,
-          typename TString>
-typename enable_if<IsWriteableString<TString>::value, size_t>::type serialize(
-    const TSource &source, TString &str) {
-  DynamicStringWriter<TString> writer(str);
-  return serialize<TSerializer>(source, writer);
+template <template <typename> class TSerializer>
+typename enable_if<TSerializer<StaticStringWriter>::producesText, size_t>::type
+serialize(JsonVariantConst source, void* buffer, size_t bufferSize) {
+  StaticStringWriter writer(reinterpret_cast<char*>(buffer), bufferSize);
+  size_t n = doSerialize<TSerializer>(source, writer);
+  // add null-terminator for text output (not counted in the size)
+  if (n < bufferSize)
+    reinterpret_cast<char*>(buffer)[n] = 0;
+  return n;
+}
+
+template <template <typename> class TSerializer, typename TChar, size_t N>
+typename enable_if<IsChar<TChar>::value, size_t>::type serialize(
+    JsonVariantConst source, TChar (&buffer)[N]) {
+  return serialize<TSerializer>(source, buffer, N);
 }
 
 }  // namespace ARDUINOJSON_NAMESPACE

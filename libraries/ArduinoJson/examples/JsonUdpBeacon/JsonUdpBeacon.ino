@@ -1,5 +1,5 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 //
 // This example shows how to send a JSON document to a UDP socket.
@@ -16,6 +16,8 @@
 // For example, you can run netcat on your computer
 // $ ncat -ulp 8888
 // See https://nmap.org/ncat/
+//
+// https://arduinojson.org/v6/example/udp-beacon/
 
 #include <ArduinoJson.h>
 #include <Ethernet.h>
@@ -44,7 +46,7 @@ void setup() {
 
 void loop() {
   // Allocate a temporary JsonDocument
-  // Use arduinojson.org/v6/assistant to compute the capacity.
+  // Use https://arduinojson.org/v6/assistant to compute the capacity.
   StaticJsonDocument<500> doc;
 
   // Create the "analog" array
@@ -84,4 +86,21 @@ void loop() {
   delay(10000);
 }
 
-// Visit https://arduinojson.org/v6/example/udp-beacon/ for more.
+// Performance issue?
+// ------------------
+//
+// EthernetUDP is an unbuffered stream, which is not optimal for ArduinoJson.
+// See: https://arduinojson.org/v6/how-to/improve-speed/
+
+// See also
+// --------
+//
+// https://arduinojson.org/ contains the documentation for all the functions
+// used above. It also includes an FAQ that will help you solve any
+// serialization problem.
+//
+// The book "Mastering ArduinoJson" contains a tutorial on serialization.
+// It begins with a simple example, then adds more features like serializing
+// directly to a file or any stream.
+// Learn more at https://arduinojson.org/book/
+// Use the coupon code TWENTY for a 20% discount ❤❤❤❤❤

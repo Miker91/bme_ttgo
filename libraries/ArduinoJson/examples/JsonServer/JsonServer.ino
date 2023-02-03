@@ -1,5 +1,5 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2019
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 //
 // This example shows how to implement an HTTP server that sends a JSON document
@@ -12,6 +12,8 @@
 //   "analog": [0, 76, 123, 158, 192, 205],
 //   "digital": [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0]
 // }
+//
+// https://arduinojson.org/v6/example/http-server/
 
 #include <ArduinoJson.h>
 #include <Ethernet.h>
@@ -44,7 +46,8 @@ void loop() {
   EthernetClient client = server.available();
 
   // Do we have a client?
-  if (!client) return;
+  if (!client)
+    return;
 
   Serial.println(F("New client"));
 
@@ -52,7 +55,7 @@ void loop() {
   while (client.available()) client.read();
 
   // Allocate a temporary JsonDocument
-  // Use arduinojson.org/v6/assistant to compute the capacity.
+  // Use https://arduinojson.org/v6/assistant to compute the capacity.
   StaticJsonDocument<500> doc;
 
   // Create the "analog" array
@@ -94,4 +97,21 @@ void loop() {
   client.stop();
 }
 
-// Visit https://arduinojson.org/v6/example/http-server/ for more.
+// Performance issue?
+// ------------------
+//
+// EthernetClient is an unbuffered stream, which is not optimal for ArduinoJson.
+// See: https://arduinojson.org/v6/how-to/improve-speed/
+
+// See also
+// --------
+//
+// https://arduinojson.org/ contains the documentation for all the functions
+// used above. It also includes an FAQ that will help you solve any
+// serialization problem.
+//
+// The book "Mastering ArduinoJson" contains a tutorial on serialization.
+// It begins with a simple example, then adds more features like serializing
+// directly to a file or an HTTP client.
+// Learn more at https://arduinojson.org/book/
+// Use the coupon code TWENTY for a 20% discount ❤❤❤❤❤
