@@ -108,12 +108,13 @@ char* humidityChar;
 char* pressureChar;
 
 //Flags to check whether new temperature and humidity readings are available
-boolean newTemperature = false;
-boolean newHumidity = false;
-boolean newPressure = false;
+boolean newTemperature  = false;
+boolean newHumidity     = false;
+boolean newPressure     = false;
 
 // declare json for data
 DynamicJsonDocument doc(1024);
+String json_string;
 
 //Connect to the BLE Server that has the name, Service, and Characteristics
 bool connectToServer(BLEAddress pAddress) {
@@ -133,8 +134,8 @@ bool connectToServer(BLEAddress pAddress) {
 
   // Obtain a reference to the characteristics in the service of the remote BLE server.
   temperatureCharacteristic = pRemoteService->getCharacteristic(temperatureCharacteristicUUID);
-  humidityCharacteristic = pRemoteService->getCharacteristic(humidityCharacteristicUUID);
-  pressureCharacteristic = pRemoteService->getCharacteristic(pressureCharacteristicUUID);
+  humidityCharacteristic    = pRemoteService->getCharacteristic(humidityCharacteristicUUID);
+  pressureCharacteristic    = pRemoteService->getCharacteristic(pressureCharacteristicUUID);
 
   if (temperatureCharacteristic == nullptr || humidityCharacteristic == nullptr || pressureCharacteristic == nullptr) {
     Serial.print("Failed to find our characteristic UUID");
@@ -166,8 +167,11 @@ static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharact
                                       uint8_t* pData, size_t length, bool isNotify) {
   //store temperature value
   temperatureChar = (char*)pData;
-  doc["Temperatura"] = String(temperatureChar);
-  newTemperature = true;
+  if (temperatureChar) {
+    delay(10);
+    doc["Temperatura"] = String(temperatureChar);
+    newTemperature = true;
+  }
 }
 
 //When the BLE Server sends a new humidity reading with the notify property
@@ -175,16 +179,22 @@ static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
                                    uint8_t* pData, size_t length, bool isNotify) {
   //store humidity value
   humidityChar = (char*)pData;
-  doc["Wilgotnosc"] = String(humidityChar);
-  newHumidity = true;
+  if (humidityChar) {
+    delay(10);
+    doc["Wilgotnosc"] = String(humidityChar);
+    newHumidity = true;
+  }
 }
 
 static void pressureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                                    uint8_t* pData, size_t length, bool isNotify) {
   //store pressure value
   pressureChar = (char*)pData;
-  doc["Cisnienie"] = String(pressureChar);
-  newPressure = true;
+  if (pressureChar) {
+    delay(10);
+    doc["Cisnienie"] = String(pressureChar);
+    newPressure = true;
+  }
 }
 
 void setup() {
@@ -202,7 +212,7 @@ void setup() {
 
   // Set GSM module baud rate and UART pins
   SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
-  delay(3000);
+  delay(1000);
   SerialMon.println("Initializing modem...");
   modem.restart();
 
@@ -260,42 +270,57 @@ void loop() {
       SerialMon.println(" fail");
     }
     else {
-      String json_string;
-      serializeJson(doc, json_string);
-      SerialMon.println(" OK");
-      // Making an HTTP POST request
-      SerialMon.println("Performing HTTP POST request...");
-      unsigned int l=json_string.length();
-      client.print(String("POST ") + "/api/v1/tPmAT5Ab3j7F9value1/telemetry" + " HTTP/1.1\r\n");
-      client.print(String("Host: ") + "demo.thingsboard.io" + "\r\n");
-      client.println("Connection: close");
-      client.println("Content-Type: application/json");
-      client.print("Content-Length: ");
-      client.println(l);
-      client.println();
-      SerialMon.println(json_string);
-      client.println(json_string);
-
-      unsigned long timeout = millis();
-      while (client.connected() && millis() - timeout < 10000L) {
-        // Print available data (HTTP response from server)
-        while (client.available()) {
-          char c = client.read();
-          SerialMon.print(c);
-          timeout = millis();
+      if (newHumidity && newTemperature && newPressure){
+        serializeJson(doc, json_string);
+        if (doc["Cisnienie"] == "Null" || doc["Temperatura"] == "Null" || doc["Wilgotnosc"] == "Null"){
+          SerialMon.println(F("Dane są niepełnie. Nie wysyłam"));
+          serializeJson(doc, Serial);
+          goto LOOP;
         }
+        SerialMon.println(" OK");
+        // Making an HTTP POST request
+        SerialMon.println("Performing HTTP POST request...");
+        unsigned int l=json_string.length();
+        SerialMon.println(json_string);
+        client.print(String("POST ") + "/api/v1/tPmAT5Ab3j7F9value1/telemetry" + " HTTP/1.1\r\n");
+        client.print(String("Host: ") + "demo.thingsboard.io" + "\r\n");
+        client.println("Connection: close");
+        client.println("Content-Type: application/json");
+        client.print("Content-Length: ");
+        client.println(l);
+        client.println();
+        client.println(json_string);
+
+        unsigned long timeout = millis();
+        while (client.connected() && millis() - timeout < 10000L) {
+          // Print available data (HTTP response from server)
+          while (client.available()) {
+            char c = client.read();
+            SerialMon.print(c);
+            timeout = millis();
+          }
+        }
+        SerialMon.println();
+      
+        // Close client and disconnect
+        client.stop();
+        SerialMon.println(F("Server disconnected"));
+        modem.gprsDisconnect();
+        SerialMon.println(F("GPRS disconnected"));
+      } else {
+        SerialMon.println(F("Dane są niepełnie. Nie wysyłam"));
+        goto LOOP;
       }
-      SerialMon.println();
-    
-      // Close client and disconnect
-      client.stop();
-      SerialMon.println(F("Server disconnected"));
-      modem.gprsDisconnect();
-      SerialMon.println(F("GPRS disconnected"));
+      // Czyszczenie zmiennych
+      json_string     = "";
+      newHumidity     = false;
+      newTemperature  = false;
+      newPressure     = false;
     }
   }
-
   delay(60000);  // Delay a second between loops.
+LOOP:
+  modem.restart();
   // SerialMon.println("Going to sleep...");
   // esp_deep_sleep_start();
 }
